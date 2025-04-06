@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>主人的魔法轮盘</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 40px;
+      background: linear-gradient(to bottom, #f0f8ff, #ffe);
+    }
+    canvas {
+      border: 5px solid #aaa;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    }
+    button, input, textarea {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px;
+      border-radius: 10px;
+      border: 1px solid #aaa;
+    }
+    button {
+      cursor: pointer;
+      background: #ffb347;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #ffa500;
+    }
+    textarea {
+      width: 80%;
+      height: 100px;
+    }
+    #pointer {
+      position: absolute;
+      left: 50%;
+      top: 120px;
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 30px solid red;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+  <h1>主人的魔法轮盘</h1>
+  <div id="pointer"></div>
+  <canvas id="wheel" width="400" height="400"></canvas>
+  <br />
+  <button onclick="spin()">转啊转～</button>
+
+  <h3>自定义选项（每行一个）</h3>
+  <textarea id="optionEditor"></textarea><br />
+  <button onclick="saveOptions()">保存选项</button>
+
+  <script>
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    let angle = 0, spinning = false;
+
+    function getSavedOptions() {
+      const stored = localStorage.getItem("magic_options");
+      return stored ? JSON.parse(stored) : [
+        "勇者鱼剑男", "篝火史莱姆", "冒失魔法使", "鸡鸡", "拉拉", "村民A"
+      ];
+    }
+
+    let options = getSavedOptions();
+    const colors = ["#f66", "#6f6", "#66f", "#ff6", "#6ff", "#f6f", "#fcc", "#cfc"];
+
+    function updateOptionEditor() {
+      document.getElementById("optionEditor").value = options.join("\n");
+    }
+
+    function saveOptions() {
+      const input = document.getElementById("optionEditor").value.trim();
+      const lines = input.split("\n").map(x => x.trim()).filter(x => x);
+      if (lines.length > 0) {
+        options = lines;
+        localStorage.setItem("magic_options", JSON.stringify(options));
+        drawWheel();
+        alert("选项已保存！");
+      }
+    }
+
+    function drawWheel() {
+      const num = options.length;
+      const arc = Math.PI * 2 / num;
+      for (let i = 0; i < num; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(200, 200);
+        ctx.arc(200, 200, 200, i * arc, (i + 1) * arc);
+        ctx.fill();
+        ctx.fillStyle = "#000";
+        ctx.font = "16px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(options[i], 
+          200 + Math.cos(i * arc + arc / 2) * 120,
+          200 + Math.sin(i * arc + arc / 2) * 120
+        );
+      }
+    }
+
+    function spin() {
+      if (spinning) return;
+      spinning = true;
+      let speed = Math.random() * 10 + 30;
+      let slowDown = 0.985;
+      let rotation = 0;
+
+      function animate() {
+        ctx.clearRect(0, 0, 400, 400);
+        ctx.save();
+        ctx.translate(200, 200);
+        ctx.rotate(rotation);
+        ctx.translate(-200, -200);
+        drawWheel();
+        ctx.restore();
+
+        rotation += speed * 0.01;
+        speed *= slowDown;
+
+        if (speed < 0.2) {
+          spinning = false;
+          const finalRotation = rotation % (Math.PI * 2);
+          const index = Math.floor(((Math.PI * 3/2 - finalRotation + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2) * options.length);
+          const selected = options[index];
+          setTimeout(() => alert("选中的是：「" + selected + "」！"), 100);
+        } else {
+          requestAnimationFrame(animate);
+        }
+      }
+      animate();
+    }
+
+    updateOptionEditor();
+    drawWheel();
+  </script>
+</body>
+</html>
